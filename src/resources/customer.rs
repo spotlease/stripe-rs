@@ -1,8 +1,9 @@
 use error::Error;
 use client::Client;
-use resources::{Address, CardParams, Currency, Deleted, Discount, Source, Subscription};
+use resources::{Address, CardParams, Currency, Deleted, Discount, Source, Subscription, Card, BankAccount};
 use params::{List, Metadata, RangeQuery, Timestamp};
 use serde_qs as qs;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CustomerShippingDetails {
@@ -11,11 +12,20 @@ pub struct CustomerShippingDetails {
     pub phone: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(untagged)]
-pub enum CustomerSource<'a> {
+pub enum NewCustomerSource<'a> {
     Token(&'a str),
-    Card(CardParams<'a>),
+    Card(CardParams<'a>)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "object")]
+pub enum CustomerSource {
+    #[serde(rename = "bank_account")]
+    BankAccount(BankAccount),
+    #[serde(rename = "card")]
+    Card(Card)
 }
 
 /// The set of parameters that can be used when creating or updating a customer.
@@ -38,7 +48,7 @@ pub struct CustomerParams<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shipping: Option<CustomerShippingDetails>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub source: Option<CustomerSource<'a>>,
+    pub source: Option<NewCustomerSource<'a>>,
 }
 
 /// The set of parameters that can be used when listing customers.
@@ -113,4 +123,12 @@ impl Customer {
     pub fn list(client: &Client, params: CustomerListParams) -> Result<List<Customer>, Error> {
         client.get(&format!("/customers?{}", qs::to_string(&params)?))
     }
+}
+
+pub fn attach_source(client: &Client, customer_id: &str, source: NewCustomerSource) -> Result<CustomerSource, Error> {
+
+    let mut params = HashMap::new();
+    params.insert("source", source);
+    
+    client.post(&format!("/customers/{}/sources", customer_id), params)
 }
