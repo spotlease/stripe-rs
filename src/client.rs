@@ -1,11 +1,10 @@
 use error::{Error, ErrorObject, RequestError};
-use hyper;
-use hyper::client::RequestBuilder;
-use hyper::header::{Authorization, Basic, ContentType, Headers};
-use hyper::net::HttpsConnector;
 use serde;
 use serde_json as json;
 use serde_qs as qs;
+use reqwest;
+use reqwest::header::{self, Headers};
+use reqwest::RequestBuilder;
 use std::io::Read;
 
 #[derive(Clone, Default)]
@@ -15,7 +14,7 @@ pub struct Params {
 
 // TODO: #[derive(Clone)]
 pub struct Client {
-    client: hyper::Client,
+    reqwest_client: reqwest::Client,
     secret_key: String,
     params: Params,
 }
@@ -34,29 +33,10 @@ impl Client {
         format!("https://api.stripe.com/v1/{}", &path[1..])
     }
 
-    #[cfg(feature = "with-rustls")]
     pub fn new<Str: Into<String>>(secret_key: Str) -> Client {
-        use hyper_rustls::TlsClient;
 
-        let tls = TlsClient::new();
-        let connector = HttpsConnector::new(tls);
-        let client = hyper::Client::with_connector(connector);
         Client {
-            client: client,
-            secret_key: secret_key.into(),
-            params: Params::default(),
-        }
-    }
-
-    #[cfg(feature = "with-openssl")]
-    pub fn new<Str: Into<String>>(secret_key: Str) -> Client {
-        use hyper_openssl::OpensslClient;
-
-        let tls = OpensslClient::new().unwrap();
-        let connector = HttpsConnector::new(tls);
-        let client = hyper::Client::with_connector(connector);
-        Client {
-            client: client,
+            reqwest_client: reqwest::Client::new(),
             secret_key: secret_key.into(),
             params: Params::default(),
         }
@@ -82,36 +62,44 @@ impl Client {
 
     pub fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
         let url = Client::url(path);
-        let request = self.client.get(&url).headers(self.headers());
+
+        let mut request = self.reqwest_client.get(&url);
+        let request = request.headers(self.headers());
         send(request)
     }
 
     pub fn post<T: serde::de::DeserializeOwned, P: serde::Serialize>(&self, path: &str, params: P) -> Result<T, Error> {
         let url = Client::url(path);
         let body = qs::to_string(&params)?;
-        let request = self.client.post(&url).headers(self.headers()).body(&body);
+        let mut request = self.reqwest_client.post(&url);
+        let request = request.headers(self.headers()).form(&params);
         send(request)
     }
 
     pub fn post_empty<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
         let url = Client::url(path);
-        let request = self.client.post(&url).headers(self.headers());
+        
+        let mut request = self.reqwest_client.post(&url);
+        let request = request.headers(self.headers());
         send(request)
     }
 
     pub fn delete<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
         let url = Client::url(path);
-        let request = self.client.delete(&url).headers(self.headers());
+
+        let mut request = self.reqwest_client.post(&url);
+
+        let request = request.headers(self.headers());
         send(request)
     }
 
     fn headers(&self) -> Headers {
         let mut headers = Headers::new();
-        headers.set(Authorization(Basic {
+        headers.set(header::Authorization(header::Basic {
             username: self.secret_key.clone(),
             password: None,
         }));
-        headers.set(ContentType::form_url_encoded());
+        headers.set(header::ContentType::form_url_encoded());
         if let Some(ref account) = self.params.stripe_account {
             headers.set_raw("Stripe-Account", vec![account.as_bytes().to_vec()]);
         }
@@ -119,12 +107,12 @@ impl Client {
     }
 }
 
-fn send<T: serde::de::DeserializeOwned>(request: RequestBuilder) -> Result<T, Error> {
+fn send<'a, T: serde::de::DeserializeOwned>(request: &'a mut RequestBuilder) -> Result<T, Error> {
     let mut response = request.send()?;
     let mut body = String::with_capacity(4096);
     response.read_to_string(&mut body)?;
 
-    let status = response.status_raw().0;
+    let status = response.status().as_u16();
     match status {
         200...299 => {}
         _ => {

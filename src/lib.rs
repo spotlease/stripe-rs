@@ -51,11 +51,7 @@
 
 extern crate chrono;
 extern crate hmac;
-extern crate hyper;
-#[cfg(feature = "with-rustls")]
-extern crate hyper_rustls;
-#[cfg(feature = "with-openssl")]
-extern crate hyper_openssl;
+extern crate reqwest;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -65,10 +61,10 @@ extern crate sha2;
 
 mod client;
 mod error;
-mod resources;
 mod params;
+mod resources;
 
 pub use client::{Client, Params};
 pub use error::{Error, ErrorCode, ErrorType, RequestError};
-pub use params::{List, RangeQuery, RangeBounds, Metadata, Timestamp};
+pub use params::{List, Metadata, RangeBounds, RangeQuery, Timestamp};
 pub use resources::*;

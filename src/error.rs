@@ -1,12 +1,11 @@
-extern crate hyper;
-extern crate serde_json as json;
-extern crate serde_qs as qs;
-
 use params::to_snakecase;
 use std::error;
 use std::fmt;
 use std::io;
 use std::num::ParseIntError;
+use reqwest;
+use serde_qs;
+use serde_json;
 
 /// An error encountered when communicating with the Stripe API.
 #[derive(Debug)]
@@ -14,7 +13,7 @@ pub enum Error {
     /// An error reported by Stripe.
     Stripe(RequestError),
     /// A networking error communicating with the Stripe server.
-    Http(hyper::Error),
+    Http(reqwest::Error),
     /// An error reading the response body.
     Io(io::Error),
     /// An error converting between wire format and Rust types.
@@ -59,8 +58,8 @@ impl From<RequestError> for Error {
     }
 }
 
-impl From<hyper::Error> for Error {
-    fn from(err: hyper::Error) -> Error {
+impl From<reqwest::Error> for Error {
+    fn from(err: reqwest::Error) -> Error {
         Error::Http(err)
     }
 }
@@ -71,14 +70,14 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<qs::Error> for Error {
-    fn from(err: qs::Error) -> Error {
+impl From<serde_qs::Error> for Error {
+    fn from(err: serde_qs::Error) -> Error {
         Error::Conversion(Box::new(err))
     }
 }
 
-impl From<json::Error> for Error {
-    fn from(err: json::Error) -> Error {
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
         Error::Conversion(Box::new(err))
     }
 }
@@ -201,7 +200,7 @@ pub enum WebhookError {
     BadHeader(ParseIntError),
     BadSignature,
     BadTimestamp(i64),
-    BadParse(json::Error),
+    BadParse(serde_json::Error),
 }
 
 impl fmt::Display for WebhookError {
