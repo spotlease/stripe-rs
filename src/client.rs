@@ -1,31 +1,23 @@
-use error::{Error, ErrorObject, RequestError};
-use serde;
-use serde_json as json;
-use serde_qs as qs;
+use error::{Error, RequestError};
 use reqwest;
-use reqwest::header::{self, Headers};
-use reqwest::RequestBuilder;
-use std::io::Read;
+use reqwest::Url;
+use reqwest::header::Headers;
+use serde;
+use serde::de::DeserializeOwned;
+
+const DEFAULT_API_URL: &'static str = "https://api.stripe.com/v1";
 
 #[derive(Clone, Default)]
 pub struct Params {
     pub stripe_account: Option<String>,
 }
 
-// TODO: #[derive(Clone)]
+#[derive(Clone)]
 pub struct Client {
     reqwest_client: reqwest::Client,
+    api_url: String,
     secret_key: String,
     params: Params,
-}
-
-// TODO: With Hyper 0.11.x, hyper::Client implements clone, and we can just derive this
-impl Clone for Client {
-    fn clone(&self) -> Self {
-        let mut client = Client::new(self.secret_key.as_str());
-        client.params = self.params.clone();
-        client
-    }
 }
 
 impl Client {
@@ -33,14 +25,25 @@ impl Client {
         format!("https://api.stripe.com/v1/{}", &path[1..])
     }
 
-    pub fn new<Str: Into<String>>(secret_key: Str) -> Client {
+    pub fn path_to_url(&self, path: &str) -> Url {
+        Url::parse(&format!("{}/{}", self.api_url, &path[1..])).unwrap()
+    }
 
+    pub fn new<Str: Into<String>>(secret_key: Str) -> Client {
         Client {
             reqwest_client: reqwest::Client::new(),
+            api_url: DEFAULT_API_URL.to_owned(),
             secret_key: secret_key.into(),
             params: Params::default(),
         }
     }
+
+    //TODO: pub fn execute
+
+    // pub fn create_reqwest_request(&self, method: reqwest::Method, path: &str) -> reqwest::Request {
+    //     let url = self.path_to_url(path);
+    //     reqwest::Request::new(method, url)
+    // }
 
     /// Clones a new client with different params.
     ///
@@ -60,46 +63,65 @@ impl Client {
         self.params.stripe_account = Some(account_id.into());
     }
 
-    pub fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
+    pub fn get<T: DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
         let url = Client::url(path);
-
         let mut request = self.reqwest_client.get(&url);
-        let request = request.headers(self.headers());
-        send(request)
+        request.headers(self.headers());
+        process_response(request.send()?)
     }
 
-    pub fn post<T: serde::de::DeserializeOwned, P: serde::Serialize>(&self, path: &str, params: P) -> Result<T, Error> {
+    pub fn get_with_params<T: DeserializeOwned, P: serde::Serialize>(&self, path: &str, params: P) -> Result<T, Error> {
         let url = Client::url(path);
-        let body = qs::to_string(&params)?;
-        let mut request = self.reqwest_client.post(&url);
-        let request = request.headers(self.headers()).form(&params);
-        send(request)
+        let mut request = self.reqwest_client.get(&url);
+        request.headers(self.headers()).query(&params);
+        process_response(request.send()?)
     }
 
-    pub fn post_empty<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
+    pub fn post<T: DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
         let url = Client::url(path);
-        
         let mut request = self.reqwest_client.post(&url);
-        let request = request.headers(self.headers());
-        send(request)
+        request.headers(self.headers());
+        process_response(request.send()?)
     }
 
-    pub fn delete<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
+    pub fn post_with_params<T: DeserializeOwned, P: serde::Serialize>(
+        &self,
+        path: &str,
+        params: P,
+    ) -> Result<T, Error> {
         let url = Client::url(path);
-
         let mut request = self.reqwest_client.post(&url);
+        request.headers(self.headers()).form(&params);
+        process_response(request.send()?)
+    }
 
-        let request = request.headers(self.headers());
-        send(request)
+    pub fn delete<T: DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
+        let url = Client::url(path);
+        let mut request = self.reqwest_client.post(&url);
+        request.headers(self.headers());
+        process_response(request.send()?)
+    }
+
+    pub fn delete_with_params<T: DeserializeOwned, P: serde::Serialize>(
+        &self,
+        path: &str,
+        params: P,
+    ) -> Result<T, Error> {
+        let url = Client::url(path);
+        let mut request = self.reqwest_client.post(&url);
+        request.headers(self.headers()).query(&params);
+        process_response(request.send()?)
     }
 
     fn headers(&self) -> Headers {
+        use reqwest::header::{Authorization, Basic, ContentType};
+
         let mut headers = Headers::new();
-        headers.set(header::Authorization(header::Basic {
+        headers.set(Authorization(Basic {
             username: self.secret_key.clone(),
             password: None,
         }));
-        headers.set(header::ContentType::form_url_encoded());
+        headers.set(ContentType::form_url_encoded());
         if let Some(ref account) = self.params.stripe_account {
             headers.set_raw("Stripe-Account", vec![account.as_bytes().to_vec()]);
         }
@@ -107,24 +129,29 @@ impl Client {
     }
 }
 
-fn send<'a, T: serde::de::DeserializeOwned>(request: &'a mut RequestBuilder) -> Result<T, Error> {
-    let mut response = request.send()?;
-    let mut body = String::with_capacity(4096);
-    response.read_to_string(&mut body)?;
-
-    let status = response.status().as_u16();
-    match status {
-        200...299 => {}
+fn process_response<T: DeserializeOwned>(mut response: reqwest::Response) -> Result<T, Error> {
+    match response.status().as_u16() {
+        200 => response.json().map_err(|err| Error::from(err)),
         _ => {
-            let mut err = json::from_str(&body).unwrap_or_else(|err| {
-                let mut req = ErrorObject { error: RequestError::default() };
-                req.error.message = Some(format!("failed to deserialize error: {}", err));
-                req
-            });
-            err.error.http_status = status;
-            return Err(Error::from(err.error));
+            Err(match response.json() {
+                Ok(request_err) => {
+                    let request_err: RequestError = request_err;
+                    Error::from(request_err)
+                }
+                Err(json_err) => {
+                    Error::from(json_err)
+                }
+            })
+
+            // let mut err = json::from_str(&body).unwrap_or_else(|err| {
+            //     let mut req = ErrorObject {
+            //         error: RequestError::default(),
+            //     };
+            //     req.error.message = Some(format!("failed to deserialize error: {}", err));
+            //     req
+            // });
+            // err.error.http_status = status;
+            // Err(Error::from(err.error))
         }
     }
-
-    json::from_str(&body).map_err(|err| Error::from(err))
 }

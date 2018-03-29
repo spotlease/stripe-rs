@@ -1,10 +1,8 @@
-use params::to_snakecase;
 use std::error;
 use std::fmt;
 use std::io;
 use std::num::ParseIntError;
 use reqwest;
-use serde_qs;
 use serde_json;
 
 /// An error encountered when communicating with the Stripe API.
@@ -70,12 +68,6 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<serde_qs::Error> for Error {
-    fn from(err: serde_qs::Error) -> Error {
-        Error::Conversion(Box::new(err))
-    }
-}
-
 impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Error {
         Error::Conversion(Box::new(err))
@@ -86,35 +78,22 @@ impl From<serde_json::Error> for Error {
 /// The list of possible values for a RequestError's type.
 #[derive(Debug, PartialEq, Deserialize)]
 pub enum ErrorType {
-    #[serde(skip_deserializing)]
-    Unknown,
-
-    #[serde(rename = "api_error")]
-    Api,
     #[serde(rename = "api_connection_error")]
     Connection,
+    #[serde(rename = "api_error")]
+    Api,
     #[serde(rename = "authentication_error")]
     Authentication,
     #[serde(rename = "card_error")]
     Card,
+    #[serde(rename = "idempotency_error")]
+    Idempotency,
     #[serde(rename = "invalid_request_error")]
     InvalidRequest,
     #[serde(rename = "rate_limit_error")]
     RateLimit,
     #[serde(rename = "validation_error")]
     Validation,
-}
-
-impl Default for ErrorType {
-    fn default() -> Self {
-        ErrorType::Unknown
-    }
-}
-
-impl fmt::Display for ErrorType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", to_snakecase(&format!("{:?}Error", self)))
-    }
 }
 
 /// The list of possible values for a RequestError's code.
@@ -135,16 +114,10 @@ pub enum ErrorCode {
     ProcessingError,
 }
 
-impl fmt::Display for ErrorCode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", to_snakecase(&format!("{:?}", self)))
-    }
-}
-
 /// An error reported by stripe in a request's response.
 ///
 /// For more details see https://stripe.com/docs/api#errors.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct RequestError {
     /// The HTTP status in the response.
     #[serde(skip_deserializing)]
@@ -172,7 +145,7 @@ pub struct RequestError {
 
 impl fmt::Display for RequestError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}({})", self.error_type, self.http_status)?;
+        write!(f, "{:?}({})", self.error_type, self.http_status)?;
         if let Some(ref message) = self.message {
             write!(f, ": {}", message)?;
         }
@@ -186,12 +159,6 @@ impl error::Error for RequestError {
             "request error",
         )
     }
-}
-
-#[doc(hidden)]
-#[derive(Deserialize)]
-pub struct ErrorObject {
-    pub error: RequestError,
 }
 
 /// An error encountered when communicating with the Stripe API webhooks.

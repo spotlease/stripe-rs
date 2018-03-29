@@ -2,7 +2,6 @@ use error::Error;
 use client::Client;
 use params::{List, Metadata, RangeQuery, Timestamp};
 use resources::{Currency, Discount, Plan};
-use serde_qs as qs;
 
 /// The set of parameters that can be used when creating or updating an invoice.
 ///
@@ -175,7 +174,7 @@ impl Invoice {
     ///
     /// For more details see https://stripe.com/docs/api#create_invoice.
     pub fn create(client: &Client, params: InvoiceParams) -> Result<Invoice, Error> {
-        client.post("/invoices", params)
+        client.post_with_params("/invoices", params)
     }
 
     /// Retrieves the details of an invoice.
@@ -194,28 +193,28 @@ impl Invoice {
     ///
     /// For more details see https://stripe.com/docs/api#upcoming_invoice
     pub fn upcoming(client: &Client, params: InvoiceUpcomingParams) -> Result<Invoice, Error> {
-        client.get(&format!("/invoices/upcoming?{}", qs::to_string(&params)?))
+        client.get_with_params("/invoices/upcoming", params)
     }
 
     /// Pays an invoice.
     ///
     /// For more details see https://stripe.com/docs/api#pay_invoice.
     pub fn pay(client: &Client, invoice_id: &str) -> Result<Invoice, Error> {
-        client.post_empty(&format!("/invoices/{}/pay", invoice_id))
+        client.post(&format!("/invoices/{}/pay", invoice_id))
     }
 
     /// Updates an invoice.
     ///
     /// For more details see https://stripe.com/docs/api#update_invoice.
     pub fn update(client: &Client, invoice_id: &str, params: InvoiceParams) -> Result<Invoice, Error> {
-        client.post(&format!("/invoices/{}", invoice_id), &params)
+        client.post_with_params(&format!("/invoices/{}", invoice_id), &params)
     }
 
     /// Lists all invoices.
     ///
     /// For more details see https://stripe.com/docs/api#list_invoices.
     pub fn list(client: &Client, params: InvoiceListParams) -> Result<List<Invoice>, Error> {
-        client.get(&format!("/invoices?{}", qs::to_string(&params)?))
+        client.get_with_params("/invoices", params)
     }
 }
 
@@ -224,6 +223,6 @@ impl InvoiceLineItem {
     ///
     /// For more details see https://stripe.com/docs/api#invoice_line_item_object
     pub fn create(client: &Client, params: InvoiceLineItemParams) -> Result<InvoiceLineItem, Error> {
-        client.post(&format!("/invoiceitems"), &params)
+        client.post_with_params("/invoiceitems", &params)
     }
 }

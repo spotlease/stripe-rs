@@ -2,7 +2,6 @@ use error::Error;
 use client::Client;
 use resources::{Discount, Plan};
 use params::{List, Metadata, Timestamp};
-use serde_qs as qs;
 
 #[derive(Default, Serialize)]
 pub struct CancelParams {
@@ -101,7 +100,7 @@ impl Subscription {
     ///
     /// For more details see https://stripe.com/docs/api#create_subscription.
     pub fn create(client: &Client, params: SubscriptionParams) -> Result<Subscription, Error> {
-        client.post("/subscriptions", params)
+        client.post_with_params("/subscriptions", params)
     }
 
     /// Retrieves the details of a subscription.
@@ -114,13 +113,13 @@ impl Subscription {
     /// Updates a subscription's properties.
     /// For more details see https://stripe.com/docs/api#update_subscription.
     pub fn update(client: &Client, subscription_id: &str, params: SubscriptionParams) -> Result<Subscription, Error> {
-        client.post(&format!("/subscriptions/{}", subscription_id), params)
+        client.post_with_params(&format!("/subscriptions/{}", subscription_id), params)
     }
 
     /// Cancels a subscription.
     ///
     /// For more details see https://stripe.com/docs/api#cancel_subscription.
     pub fn cancel(client: &Client, subscription_id: &str, params: CancelParams) -> Result<Subscription, Error> {
-        client.delete(&format!("/subscriptions/{}?{}", subscription_id, qs::to_string(&params)?))
+        client.delete_with_params(&format!("/subscriptions/{}", subscription_id), params)
     }
 }

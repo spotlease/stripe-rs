@@ -2,7 +2,6 @@ use client::Client;
 use error::{Error, ErrorCode};
 use params::{List, Metadata, RangeQuery, Timestamp};
 use resources::{Address, Currency, NewCustomerSource, Refund, Source};
-use serde_qs as qs;
 
 #[derive(Debug, Deserialize)]
 pub struct ChargeOutcome {
@@ -196,7 +195,7 @@ impl Charge {
     ///
     /// For more details see https://stripe.com/docs/api#create_charge.
     pub fn create(client: &Client, params: ChargeParams) -> Result<Charge, Error> {
-        client.post("/charges", params)
+        client.post_with_params("/charges", params)
     }
 
     /// Retrieves the details of a charge.
@@ -210,20 +209,20 @@ impl Charge {
     ///
     /// For more details see https://stripe.com/docs/api#update_charge.
     pub fn update(client: &Client, charge_id: &str, params: ChargeParams) -> Result<Charge, Error> {
-        client.post(&format!("/charges/{}", charge_id), params)
+        client.post_with_params(&format!("/charges/{}", charge_id), params)
     }
 
     /// Capture captures a previously created charge with capture set to false.
     ///
     /// For more details see https://stripe.com/docs/api#charge_capture.
     pub fn capture(client: &Client, charge_id: &str, params: CaptureParams) -> Result<Charge, Error> {
-        client.post(&format!("/charges/{}/capture", charge_id), params)
+        client.post_with_params(&format!("/charges/{}/capture", charge_id), params)
     }
 
     /// List all charges.
     ///
     /// For more details see https://stripe.com/docs/api#list_charges.
     pub fn list(client: &Client, params: ChargeListParams) -> Result<Vec<Charge>, Error> {
-        client.get(&format!("/charges?{}", qs::to_string(&params)?))
+        client.get_with_params("/charges", params)
     }
 }

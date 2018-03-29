@@ -2,7 +2,6 @@ use error::Error;
 use client::Client;
 use resources::{Address, CardParams, Currency, Deleted, Discount, Source, Subscription, Card, BankAccount};
 use params::{List, Metadata, RangeQuery, Timestamp};
-use serde_qs as qs;
 use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -93,7 +92,7 @@ impl Customer {
     ///
     /// For more details see https://stripe.com/docs/api#create_customer.
     pub fn create(client: &Client, params: CustomerParams) -> Result<Customer, Error> {
-        client.post("/customers", params)
+        client.post_with_params("/customers", params)
     }
 
     /// Retrieves the details of a customer.
@@ -107,7 +106,7 @@ impl Customer {
     ///
     /// For more details see https://stripe.com/docs/api#update_customer.
     pub fn update(client: &Client, customer_id: &str, params: CustomerParams) -> Result<Customer, Error> {
-        client.post(&format!("/customers/{}", customer_id), params)
+        client.post_with_params(&format!("/customers/{}", customer_id), params)
     }
 
     /// Deletes a customer.
@@ -121,7 +120,7 @@ impl Customer {
     ///
     /// For more details see https://stripe.com/docs/api#list_customers.
     pub fn list(client: &Client, params: CustomerListParams) -> Result<List<Customer>, Error> {
-        client.get(&format!("/customers?{}", qs::to_string(&params)?))
+        client.get_with_params("/customers", params)
     }
 }
 
@@ -130,5 +129,5 @@ pub fn attach_source(client: &Client, customer_id: &str, source: NewCustomerSour
     let mut params = HashMap::new();
     params.insert("source", source);
     
-    client.post(&format!("/customers/{}/sources", customer_id), params)
+    client.post_with_params(&format!("/customers/{}/sources", customer_id), params)
 }

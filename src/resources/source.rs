@@ -54,7 +54,7 @@ pub enum Source {
 
 impl Source {
     pub fn create(client: &Client, params: SourceParams) -> Result<Source, Error> {
-        client.post("/sources", params)
+        client.post_with_params("/sources", params)
     }
 
     pub fn get(client: &Client, source_id: &str) -> Result<Source, Error> {
@@ -62,6 +62,6 @@ impl Source {
     }
 
     pub fn update(client: &Client, source_id: &str, params: SourceParams) -> Result<Source, Error> {
-        client.post(&format!("/source/{}", source_id), params)
+        client.post_with_params(&format!("/source/{}", source_id), params)
     }
 }
