@@ -9,6 +9,8 @@ use serde_json;
 #[derive(Debug)]
 pub enum Error {
     /// An error reported by Stripe.
+    UrlParse(reqwest::UrlError),
+    /// An error reported by Stripe.
     Stripe(RequestError),
     /// A networking error communicating with the Stripe server.
     Http(reqwest::Error),
@@ -50,6 +52,11 @@ impl error::Error for Error {
     }
 }
 
+impl From<reqwest::UrlError> for Error {
+    fn from(err: reqwest::UrlError) -> Error {
+        Error::UrlParse(err)
+    }
+}
 impl From<RequestError> for Error {
     fn from(err: RequestError) -> Error {
         Error::Stripe(err)
