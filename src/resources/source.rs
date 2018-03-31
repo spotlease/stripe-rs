@@ -1,5 +1,4 @@
 use error::Error;
-use client::Client;
 use resources::{Address, Card, Currency};
 use params::Metadata;
 
@@ -52,16 +51,16 @@ pub enum Source {
     Card(Card),
 }
 
-impl Source {
-    pub fn create(client: &Client, params: SourceParams) -> Result<Source, Error> {
-        client.post_with_params("/sources", params)
-    }
+// impl Source {
+//     pub fn create(client: &Client, params: SourceParams) -> Result<Source, Error> {
+//         client.post_with_params("/sources", params)
+//     }
 
-    pub fn get(client: &Client, source_id: &str) -> Result<Source, Error> {
-        client.get(&format!("/sources/{}", source_id))
-    }
+//     pub fn get(client: &Client, source_id: &str) -> Result<Source, Error> {
+//         client.get(&format!("/sources/{}", source_id))
+//     }
 
-    pub fn update(client: &Client, source_id: &str, params: SourceParams) -> Result<Source, Error> {
-        client.post_with_params(&format!("/source/{}", source_id), params)
-    }
-}
+//     pub fn update(client: &Client, source_id: &str, params: SourceParams) -> Result<Source, Error> {
+//         client.post_with_params(&format!("/source/{}", source_id), params)
+//     }
+// }

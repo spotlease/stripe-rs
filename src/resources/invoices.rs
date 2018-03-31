@@ -1,5 +1,4 @@
 use error::Error;
-use client::Client;
 use params::{List, Metadata, RangeQuery, Timestamp};
 use resources::{Currency, Discount, Plan};
 
@@ -169,60 +168,60 @@ pub struct InvoiceListParams<'a> {
     pub subscription: Option<&'a str>,
 }
 
-impl Invoice {
-    /// Creates a new invoice.
-    ///
-    /// For more details see https://stripe.com/docs/api#create_invoice.
-    pub fn create(client: &Client, params: InvoiceParams) -> Result<Invoice, Error> {
-        client.post_with_params("/invoices", params)
-    }
+// impl Invoice {
+//     /// Creates a new invoice.
+//     ///
+//     /// For more details see https://stripe.com/docs/api#create_invoice.
+//     pub fn create(client: &Client, params: InvoiceParams) -> Result<Invoice, Error> {
+//         client.post_with_params("/invoices", params)
+//     }
 
-    /// Retrieves the details of an invoice.
-    ///
-    /// For more details see https://stripe.com/docs/api#retrieve_invoice.
-    pub fn retrieve(client: &Client, invoice_id: &str) -> Result<Invoice, Error> {
-        client.get(&format!("/invoices/{}", invoice_id))
-    }
+//     /// Retrieves the details of an invoice.
+//     ///
+//     /// For more details see https://stripe.com/docs/api#retrieve_invoice.
+//     pub fn retrieve(client: &Client, invoice_id: &str) -> Result<Invoice, Error> {
+//         client.get(&format!("/invoices/{}", invoice_id))
+//     }
 
-    // TODO: Implement InvoiceListLinesParams
-    // pub fn get_lines(client: &Client, invoice_id: &str, params: InvoiceListLinesParams) -> Result<List<InvoiceLineItem>, Error> {
-    //     client.get(&format!("/invoices/{}/lines", invoice_id))
-    // }
+//     // TODO: Implement InvoiceListLinesParams
+//     // pub fn get_lines(client: &Client, invoice_id: &str, params: InvoiceListLinesParams) -> Result<List<InvoiceLineItem>, Error> {
+//     //     client.get(&format!("/invoices/{}/lines", invoice_id))
+//     // }
 
-    /// Retrieves the details of an upcoming invoice_id
-    ///
-    /// For more details see https://stripe.com/docs/api#upcoming_invoice
-    pub fn upcoming(client: &Client, params: InvoiceUpcomingParams) -> Result<Invoice, Error> {
-        client.get_with_params("/invoices/upcoming", params)
-    }
+//     /// Retrieves the details of an upcoming invoice_id
+//     ///
+//     /// For more details see https://stripe.com/docs/api#upcoming_invoice
+//     pub fn upcoming(client: &Client, params: InvoiceUpcomingParams) -> Result<Invoice, Error> {
+//         client.get_with_params("/invoices/upcoming", params)
+//     }
 
-    /// Pays an invoice.
-    ///
-    /// For more details see https://stripe.com/docs/api#pay_invoice.
-    pub fn pay(client: &Client, invoice_id: &str) -> Result<Invoice, Error> {
-        client.post(&format!("/invoices/{}/pay", invoice_id))
-    }
+//     /// Pays an invoice.
+//     ///
+//     /// For more details see https://stripe.com/docs/api#pay_invoice.
+//     pub fn pay(client: &Client, invoice_id: &str) -> Result<Invoice, Error> {
+//         client.post(&format!("/invoices/{}/pay", invoice_id))
+//     }
 
-    /// Updates an invoice.
-    ///
-    /// For more details see https://stripe.com/docs/api#update_invoice.
-    pub fn update(client: &Client, invoice_id: &str, params: InvoiceParams) -> Result<Invoice, Error> {
-        client.post_with_params(&format!("/invoices/{}", invoice_id), &params)
-    }
+//     /// Updates an invoice.
+//     ///
+//     /// For more details see https://stripe.com/docs/api#update_invoice.
+//     pub fn update(client: &Client, invoice_id: &str, params: InvoiceParams) -> Result<Invoice, Error> {
+//         client.post_with_params(&format!("/invoices/{}", invoice_id), &params)
+//     }
 
-    /// Lists all invoices.
-    ///
-    /// For more details see https://stripe.com/docs/api#list_invoices.
-    pub fn list(client: &Client, params: InvoiceListParams) -> Result<List<Invoice>, Error> {
-        client.get_with_params("/invoices", params)
-    }
-}
+//     /// Lists all invoices.
+//     ///
+//     /// For more details see https://stripe.com/docs/api#list_invoices.
+//     pub fn list(client: &Client, params: InvoiceListParams) -> Result<List<Invoice>, Error> {
+//         client.get_with_params("/invoices", params)
+//     }
+// }
 
-impl InvoiceLineItem {
-    /// Creates an invoice line item.
-    ///
-    /// For more details see https://stripe.com/docs/api#invoice_line_item_object
-    pub fn create(client: &Client, params: InvoiceLineItemParams) -> Result<InvoiceLineItem, Error> {
-        client.post_with_params("/invoiceitems", &params)
-    }
-}
+// impl InvoiceLineItem {
+//     /// Creates an invoice line item.
+//     ///
+//     /// For more details see https://stripe.com/docs/api#invoice_line_item_object
+//     pub fn create(client: &Client, params: InvoiceLineItemParams) -> Result<InvoiceLineItem, Error> {
+//         client.post_with_params("/invoiceitems", &params)
+//     }
+// }

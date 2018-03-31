@@ -197,7 +197,6 @@ pub enum EventObject {
     Review(Review),
     Sku(Sku),
     Subscription(Subscription),
-    Transaction(Transaction),
     Transfer(Transfer),
 }
 

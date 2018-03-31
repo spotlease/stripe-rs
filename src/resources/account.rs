@@ -1,4 +1,4 @@
- use params::{List, Metadata, Timestamp};
+use params::{List, Metadata, Timestamp};
 use resources::BankAccount;
 use serde_json as json;
 

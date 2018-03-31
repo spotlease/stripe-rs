@@ -1,30 +1,20 @@
 use error::Error;
-use client::Client;
-use resources::{Address, CardParams, Currency, Deleted, Discount, Source, Subscription, Card, BankAccount};
+use resources::{Address, CardParams, Currency, Discount, Source, Subscription, Card, BankAccount};
 use params::{List, Metadata, RangeQuery, Timestamp};
-use std::collections::HashMap;
+use request::ApiRequest;
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub enum CustomerSourceParam<'a> {
+    Token(&'a str),
+    Card(CardParams<'a>)
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CustomerShippingDetails {
     pub address: Address,
     pub name: String,
     pub phone: String,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(untagged)]
-pub enum NewCustomerSource<'a> {
-    Token(&'a str),
-    Card(CardParams<'a>)
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(tag = "object")]
-pub enum CustomerSource {
-    #[serde(rename = "bank_account")]
-    BankAccount(BankAccount),
-    #[serde(rename = "card")]
-    Card(Card)
 }
 
 /// The set of parameters that can be used when creating or updating a customer.
@@ -47,7 +37,7 @@ pub struct CustomerParams<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shipping: Option<CustomerShippingDetails>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub source: Option<NewCustomerSource<'a>>,
+    pub source: Option<CustomerSourceParam<'a>>,
 }
 
 /// The set of parameters that can be used when listing customers.
@@ -63,6 +53,15 @@ pub struct CustomerListParams<'a> {
     pub limit: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub starting_after: Option<&'a str>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "object")]
+pub enum CustomerSource {
+    #[serde(rename = "bank_account")]
+    BankAccount(BankAccount),
+    #[serde(rename = "card")]
+    Card(Card)
 }
 
 /// The resource representing a Stripe customer.
@@ -87,47 +86,62 @@ pub struct Customer {
     pub subscriptions: List<Subscription>,
 }
 
-impl Customer {
-    /// Creates a new customer.
-    ///
-    /// For more details see https://stripe.com/docs/api#create_customer.
-    pub fn create(client: &Client, params: CustomerParams) -> Result<Customer, Error> {
-        client.post_with_params("/customers", params)
-    }
-
-    /// Retrieves the details of a customer.
-    ///
-    /// For more details see https://stripe.com/docs/api#retrieve_customer.
-    pub fn retrieve(client: &Client, customer_id: &str) -> Result<Customer, Error> {
-        client.get(&format!("/customers/{}", customer_id))
-    }
-
-    /// Updates a customer's properties.
-    ///
-    /// For more details see https://stripe.com/docs/api#update_customer.
-    pub fn update(client: &Client, customer_id: &str, params: CustomerParams) -> Result<Customer, Error> {
-        client.post_with_params(&format!("/customers/{}", customer_id), params)
-    }
-
-    /// Deletes a customer.
-    ///
-    /// For more details see https://stripe.com/docs/api#delete_customer.
-    pub fn delete(client: &Client, customer_id: &str) -> Result<Deleted, Error> {
-        client.delete(&format!("/customers/{}", customer_id))
-    }
-
-    /// List customers.
-    ///
-    /// For more details see https://stripe.com/docs/api#list_customers.
-    pub fn list(client: &Client, params: CustomerListParams) -> Result<List<Customer>, Error> {
-        client.get_with_params("/customers", params)
-    }
+/// Creates a new customer.
+///
+/// For more details see https://stripe.com/docs/api#create_customer.
+pub fn create(params: CustomerParams) -> ApiRequest {
+    ApiRequest::post("/customers")
+        .with_body_params(params)
 }
 
-pub fn attach_source(client: &Client, customer_id: &str, source: NewCustomerSource) -> Result<CustomerSource, Error> {
+/// Retrieves the details of a customer.
+///
+/// For more details see https://stripe.com/docs/api#retrieve_customer.
+pub fn retrieve(customer_id: &str) -> ApiRequest {
+    ApiRequest::get(&format!("/customers/{}", customer_id))
+}
 
-    let mut params = HashMap::new();
-    params.insert("source", source);
-    
-    client.post_with_params(&format!("/customers/{}/sources", customer_id), params)
+/// Updates a customer's properties.
+///
+/// For more details see https://stripe.com/docs/api#update_customer.
+pub fn update(customer_id: &str, params: CustomerParams) -> ApiRequest {
+    ApiRequest::post(&format!("/customers/{}", customer_id))
+        .with_body_params(params)
+}
+
+/// Deletes a customer.
+///
+/// For more details see https://stripe.com/docs/api#delete_customer.
+pub fn delete(customer_id: &str) -> ApiRequest {
+    ApiRequest::delete(&format!("/customers/{}", customer_id))
+}
+
+/// List customers.
+///
+/// For more details see https://stripe.com/docs/api#list_customers.
+pub fn list(params: CustomerListParams) -> ApiRequest {
+    ApiRequest::get("/customers")
+        .with_body_params(params)
+}
+
+/// Attach a source.
+///
+/// For more details see https://stripe.com/docs/api/curl#attach_source.
+pub fn attach_source(customer_id: &str, source: CustomerSourceParam) -> ApiRequest {
+    #[derive(Debug, Serialize)]
+    struct Params<'a> {
+        source: CustomerSourceParam<'a>
+    }
+
+    ApiRequest::post(&format!("/customers/{}/sources", customer_id))
+        .with_body_params(Params {
+            source: source
+        })
+}
+
+/// Detach a source.
+///
+/// For more details see https://stripe.com/docs/api/curl#detach_source.
+pub fn detach_source(customer_id: &str, source_id: &str) -> ApiRequest {
+    ApiRequest::delete(&format!("/customers/{}/sources/{}", customer_id, source_id))
 }
