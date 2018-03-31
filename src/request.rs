@@ -15,7 +15,7 @@ pub struct ApiRequest<T: DeserializeOwned> {
 impl <T> ApiRequest<T> where T: DeserializeOwned {
     pub fn new(method: Method, path: &str) -> Self {
         Self {
-            inner: Request::new(method, Url::parse("").unwrap()),
+            inner: Request::new(method, Url::parse("blob:").unwrap()),
             path: path.to_owned(),
             phantom: PhantomData
         }

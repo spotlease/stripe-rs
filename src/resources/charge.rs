@@ -3,40 +3,6 @@ use params::{List, Metadata, RangeQuery, Timestamp};
 use resources::{Address, Currency, CustomerSourceParam, Refund, Source};
 use request::ApiRequest;
 
-#[derive(Debug, Deserialize)]
-pub struct ChargeOutcome {
-    #[serde(rename = "type")]
-    pub outcome_type: String, // (authorized, manual_review, issuer_declined, blocked, invalid)
-    pub network_status: String, // (approved_by_network, declined_by_network, not_sent_to_network, reversed_after_approval)
-    #[serde(default)]
-    pub reason: Option<String>,
-    #[serde(default)]
-    pub risk_level: Option<String>, // (normal, elevated, highest, not_assessed, unknown)
-    #[serde(default)]
-    pub seller_message: Option<String>,
-    #[serde(default)]
-    pub rule: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct FraudDetails {
-    pub user_report: Option<String>,
-    #[serde(skip_serializing)]
-    pub stripe_report: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ShippingDetails {
-    pub name: String,
-    pub address: Address,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub carrier: Option<String>, // eg. Fedex, UPS, USPS
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tracking_number: Option<String>,
-}
-
 /// The set of parameters that can be used when capturing a charge.
 ///
 /// For more details see https://stripe.com/docs/api#charge_capture.
@@ -148,46 +114,6 @@ pub struct ChargeListParams<'a> {
     pub starting_after: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transfer_group: Option<&'a str>,
-}
-
-/// The resource representing a Stripe charge.
-///
-/// For more details see https://stripe.com/docs/api#charges.
-#[derive(Debug, Deserialize)]
-pub struct Charge {
-    pub id: String,
-    pub amount: u64,
-    pub amount_refunded: u64,
-    pub application: Option<String>,
-    pub application_fee: Option<String>,
-    pub balance_transaction: Option<String>,
-    pub captured: bool,
-    pub created: Timestamp,
-    pub currency: Currency,
-    pub customer: Option<String>,
-    pub description: Option<String>,
-    pub destination: Option<String>,
-    pub dispute: Option<String>,
-    pub failure_code: Option<ErrorCode>,
-    pub failure_message: Option<String>,
-    pub fraud_details: FraudDetails,
-    pub invoice: Option<String>,
-    pub livemode: bool,
-    pub metadata: Metadata,
-    pub on_behalf_of: Option<String>,
-    pub order: Option<String>,
-    pub outcome: Option<ChargeOutcome>,
-    pub paid: bool,
-    pub receipt_email: Option<String>,
-    pub receipt_number: Option<String>,
-    pub refunded: bool,
-    pub refunds: List<Refund>,
-    pub shipping: Option<ShippingDetails>,
-    pub source: Source,
-    pub source_transfer: Option<String>,
-    pub statement_descriptor: Option<String>,
-    pub status: String, // (succeeded, pending, failed)
-    pub transfer_group: Option<String>,
 }
 
 /// Creates a new charge.

@@ -63,7 +63,7 @@ mod client;
 mod request;
 mod error;
 mod params;
-mod resources;
+pub mod resources;
 
 pub use client::Client;
 pub use error::{Error, ErrorCode, ErrorType, RequestError};
