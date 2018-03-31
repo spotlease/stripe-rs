@@ -1,4 +1,4 @@
-use error::{Error, ErrorCode};
+use error::ErrorCode;
 use params::{List, Metadata, RangeQuery, Timestamp};
 use resources::{Address, Currency, CustomerSourceParam, Refund, Source};
 use request::ApiRequest;
@@ -190,41 +190,41 @@ pub struct Charge {
     pub transfer_group: Option<String>,
 }
 
-// /// Creates a new charge.
-// ///
-// /// For more details see https://stripe.com/docs/api#create_charge.
-// pub fn create(client: &Client, params: ChargeParams) -> ApiRequest {
-//     ApiRequest::post("charges")
-//         .with_body_params(params)
-// }
+/// Creates a new charge.
+///
+/// For more details see https://stripe.com/docs/api#create_charge.
+pub fn create(params: ChargeParams) -> ApiRequest<Charge> {
+    ApiRequest::post("charges")
+        .with_body_params(params)
+}
 
-// /// Retrieves the details of a charge.
-// ///
-// /// For more details see https://stripe.com/docs/api#retrieve_charge.
-// pub fn retrieve(client: &Client, charge_id: &str) -> ApiRequest {
-//     ApiRequest::get(&format!("/charges/{}", charge_id))
-// }
+/// Retrieves the details of a charge.
+///
+/// For more details see https://stripe.com/docs/api#retrieve_charge.
+pub fn retrieve(charge_id: &str) -> ApiRequest<Charge> {
+    ApiRequest::get(&format!("/charges/{}", charge_id))
+}
 
-// /// Updates a charge's properties.
-// ///
-// /// For more details see https://stripe.com/docs/api#update_charge.
-// pub fn update(client: &Client, charge_id: &str, params: ChargeParams) -> ApiRequest {
-//     ApiRequest::post(&format!("/charges/{}", charge_id))
-//         .with_body_params(params)
-// }
+/// Updates a charge's properties.
+///
+/// For more details see https://stripe.com/docs/api#update_charge.
+pub fn update(charge_id: &str, params: ChargeParams) -> ApiRequest<Charge> {
+    ApiRequest::post(&format!("/charges/{}", charge_id))
+        .with_body_params(params)
+}
 
-// /// Capture captures a previously created charge with capture set to false.
-// ///
-// /// For more details see https://stripe.com/docs/api#charge_capture.
-// pub fn capture(client: &Client, charge_id: &str, params: CaptureParams) -> ApiRequest {
-//     ApiRequest::post(&format!("/charges/{}/capture", charge_id))
-//         .with_body_params(params)
-// }
+/// Capture captures a previously created charge with capture set to false.
+///
+/// For more details see https://stripe.com/docs/api#charge_capture.
+pub fn capture(charge_id: &str, params: CaptureParams) -> ApiRequest<Charge> {
+    ApiRequest::post(&format!("/charges/{}/capture", charge_id))
+        .with_body_params(params)
+}
 
-// /// List all charges.
-// ///
-// /// For more details see https://stripe.com/docs/api#list_charges.
-// pub fn list(client: &Client, params: ChargeListParams) -> ApiRequest {
-//     ApiRequest::get("/charges")
-//         .with_body_params(params)
-// }
+/// List all charges.
+///
+/// For more details see https://stripe.com/docs/api#list_charges.
+pub fn list(params: ChargeListParams) -> ApiRequest<List<Charge>> {
+    ApiRequest::get("/charges")
+        .with_body_params(params)
+}

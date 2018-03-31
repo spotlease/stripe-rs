@@ -1,4 +1,3 @@
-use error::Error;
 use resources::{Discount, Plan};
 use params::{List, Metadata, Timestamp};
 

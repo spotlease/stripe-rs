@@ -1,4 +1,3 @@
-use error::Error;
 use resources::{Address, Card, Currency};
 use params::Metadata;
 

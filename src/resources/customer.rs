@@ -1,5 +1,4 @@
-use error::Error;
-use resources::{Address, CardParams, Currency, Discount, Source, Subscription, Card, BankAccount};
+use resources::{Address, CardParams, Currency, Deleted, Discount, Source, Subscription, Card, BankAccount};
 use params::{List, Metadata, RangeQuery, Timestamp};
 use request::ApiRequest;
 
@@ -89,7 +88,7 @@ pub struct Customer {
 /// Creates a new customer.
 ///
 /// For more details see https://stripe.com/docs/api#create_customer.
-pub fn create(params: CustomerParams) -> ApiRequest {
+pub fn create(params: CustomerParams) -> ApiRequest<Customer> {
     ApiRequest::post("/customers")
         .with_body_params(params)
 }
@@ -97,14 +96,14 @@ pub fn create(params: CustomerParams) -> ApiRequest {
 /// Retrieves the details of a customer.
 ///
 /// For more details see https://stripe.com/docs/api#retrieve_customer.
-pub fn retrieve(customer_id: &str) -> ApiRequest {
+pub fn retrieve(customer_id: &str) -> ApiRequest<Customer> {
     ApiRequest::get(&format!("/customers/{}", customer_id))
 }
 
 /// Updates a customer's properties.
 ///
 /// For more details see https://stripe.com/docs/api#update_customer.
-pub fn update(customer_id: &str, params: CustomerParams) -> ApiRequest {
+pub fn update(customer_id: &str, params: CustomerParams) -> ApiRequest<Customer> {
     ApiRequest::post(&format!("/customers/{}", customer_id))
         .with_body_params(params)
 }
@@ -112,14 +111,14 @@ pub fn update(customer_id: &str, params: CustomerParams) -> ApiRequest {
 /// Deletes a customer.
 ///
 /// For more details see https://stripe.com/docs/api#delete_customer.
-pub fn delete(customer_id: &str) -> ApiRequest {
+pub fn delete(customer_id: &str) -> ApiRequest<Deleted> {
     ApiRequest::delete(&format!("/customers/{}", customer_id))
 }
 
 /// List customers.
 ///
 /// For more details see https://stripe.com/docs/api#list_customers.
-pub fn list(params: CustomerListParams) -> ApiRequest {
+pub fn list(params: CustomerListParams) -> ApiRequest<List<Customer>> {
     ApiRequest::get("/customers")
         .with_body_params(params)
 }
@@ -127,7 +126,7 @@ pub fn list(params: CustomerListParams) -> ApiRequest {
 /// Attach a source.
 ///
 /// For more details see https://stripe.com/docs/api/curl#attach_source.
-pub fn attach_source(customer_id: &str, source: CustomerSourceParam) -> ApiRequest {
+pub fn attach_source(customer_id: &str, source: CustomerSourceParam) -> ApiRequest<Source> {
     #[derive(Debug, Serialize)]
     struct Params<'a> {
         source: CustomerSourceParam<'a>
@@ -142,6 +141,6 @@ pub fn attach_source(customer_id: &str, source: CustomerSourceParam) -> ApiReque
 /// Detach a source.
 ///
 /// For more details see https://stripe.com/docs/api/curl#detach_source.
-pub fn detach_source(customer_id: &str, source_id: &str) -> ApiRequest {
+pub fn detach_source(customer_id: &str, source_id: &str) -> ApiRequest<Source> {
     ApiRequest::delete(&format!("/customers/{}/sources/{}", customer_id, source_id))
 }

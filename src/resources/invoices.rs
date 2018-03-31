@@ -1,4 +1,3 @@
-use error::Error;
 use params::{List, Metadata, RangeQuery, Timestamp};
 use resources::{Currency, Discount, Plan};
 

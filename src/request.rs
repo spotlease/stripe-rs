@@ -1,19 +1,23 @@
 use serde::ser::Serialize;
+use serde::de::{DeserializeOwned};
 use serde_urlencoded;
 use reqwest::{Request, Method, Url};
 use reqwest::header::ContentType;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
-pub struct ApiRequest {
+pub struct ApiRequest<T: DeserializeOwned> {
     pub inner: Request,
-    pub path: String
+    pub path: String,
+    pub phantom: PhantomData<T>
 }
 
-impl ApiRequest {
+impl <T> ApiRequest<T> where T: DeserializeOwned {
     pub fn new(method: Method, path: &str) -> Self {
         Self {
             inner: Request::new(method, Url::parse("").unwrap()),
-            path: path.to_owned()
+            path: path.to_owned(),
+            phantom: PhantomData
         }
     }
 
@@ -31,7 +35,7 @@ impl ApiRequest {
         Self::new(Method::Delete, path)
     }
 
-    pub fn with_body_params<T: Serialize>(mut self, body: T) -> Self {
+    pub fn with_body_params<P: Serialize>(mut self, body: P) -> Self {
         let form_body = serde_urlencoded::to_string(body).unwrap();
         *self.inner.body_mut() = Some(form_body.into());
         self

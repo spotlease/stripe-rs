@@ -22,7 +22,7 @@ impl Client {
         }
     }
 
-    pub fn execute<T: DeserializeOwned>(&self, mut request: ApiRequest) -> Result<T, Error> {
+    pub fn execute<T: DeserializeOwned>(&self, mut request: ApiRequest<T>) -> Result<T, Error> {
         self.set_url(&mut request);
         self.set_headers(&mut request);
 
@@ -39,14 +39,14 @@ impl Client {
         }
     }
 
-    fn set_url(&self, request: &mut ApiRequest) {
+    fn set_url<T: DeserializeOwned>(&self, request: &mut ApiRequest<T>) {
         use std::mem;
 
         let new_url = Url::parse(&format!("{}{}", &self.api_url, &request.path[1..])).unwrap();
         mem::replace(request.inner.url_mut(), new_url);
     }
 
-    fn set_headers(&self, request: &mut ApiRequest) {
+    fn set_headers<T: DeserializeOwned>(&self, request: &mut ApiRequest<T>) {
         use reqwest::header::{Authorization, Basic, ContentType};
 
         let headers = request.inner.headers_mut();
