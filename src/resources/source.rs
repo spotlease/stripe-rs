@@ -1,6 +1,6 @@
 use error::Error;
 use client::Client;
-use resources::{Address, Card, Currency};
+use resources::{Address, Card, Currency, BankAccount};
 use params::Metadata;
 
 #[derive(Serialize)]
@@ -45,11 +45,11 @@ pub struct SourceParams<'a> {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
 #[serde(tag = "object")]
 pub enum Source {
-    // BitcoinReceiver(...),
-    #[serde(rename = "card")]
     Card(Card),
+    BankAccount(BankAccount),
 }
 
 impl Source {

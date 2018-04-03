@@ -1,7 +1,7 @@
 use client::Client;
 use error::Error;
 use params::{List, Metadata, RangeQuery, Timestamp};
-use resources::{Address, BankAccount, Card, CardParams, Currency, Deleted, Discount, Source, Subscription};
+use resources::{Address, CardParams, Currency, Deleted, Discount, Source, Subscription};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CustomerShippingDetails {
@@ -15,15 +15,6 @@ pub struct CustomerShippingDetails {
 pub enum CustomerSourceParam<'a> {
     Token(&'a str),
     Card(CardParams<'a>),
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(tag = "object")]
-pub enum CustomerSource {
-    #[serde(rename = "bank_account")]
-    BankAccount(BankAccount),
-    #[serde(rename = "card")]
-    Card(Card),
 }
 
 /// The set of parameters that can be used when creating or updating a customer.
@@ -126,7 +117,7 @@ impl Customer {
         client: &Client,
         customer_id: &str,
         source: CustomerSourceParam,
-    ) -> Result<CustomerSource, Error> {
+    ) -> Result<Source, Error> {
         #[derive(Debug, Serialize)]
         struct Params<'a> {
             source: CustomerSourceParam<'a>,
