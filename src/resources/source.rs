@@ -57,7 +57,7 @@ impl Source {
         client.post_with_params("/sources", params)
     }
 
-    pub fn get(client: &Client, source_id: &str) -> Result<Source, Error> {
+    pub fn get_with_params(client: &Client, source_id: &str) -> Result<Source, Error> {
         client.get(&format!("/sources/{}", source_id))
     }
 

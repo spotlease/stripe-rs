@@ -1,115 +1,105 @@
 use error::{Error, RequestError};
 use reqwest;
 use reqwest::Url;
+use reqwest::Method;
 use reqwest::header::Headers;
 use serde;
 use serde::de::DeserializeOwned;
 
 const DEFAULT_API_URL: &'static str = "https://api.stripe.com/v1";
 
-#[derive(Clone, Default)]
-pub struct Params {
-    pub stripe_account: Option<String>,
-}
-
 #[derive(Clone)]
 pub struct Client {
-    reqwest_client: reqwest::Client,
+    inner: reqwest::Client,
     api_url: String,
     secret_key: String,
-    params: Params,
+    stripe_account_id: Option<String>,
 }
 
 impl Client {
-    fn url(path: &str) -> String {
-        format!("https://api.stripe.com/v1/{}", &path[1..])
-    }
-
-    pub fn path_to_url(&self, path: &str) -> Url {
+    fn url(&self, path: &str) -> Url {
         Url::parse(&format!("{}/{}", self.api_url, &path[1..])).unwrap()
     }
 
     pub fn new<Str: Into<String>>(secret_key: Str) -> Client {
         Client {
-            reqwest_client: reqwest::Client::new(),
+            inner: reqwest::Client::new(),
             api_url: DEFAULT_API_URL.to_owned(),
             secret_key: secret_key.into(),
-            params: Params::default(),
+            stripe_account_id: None,
         }
     }
-
-    //TODO: pub fn execute
-
-    // pub fn create_reqwest_request(&self, method: reqwest::Method, path: &str) -> reqwest::Request {
-    //     let url = self.path_to_url(path);
-    //     reqwest::Request::new(method, url)
-    // }
 
     /// Clones a new client with different params.
     ///
     /// This is the recommended way to send requests for many different Stripe accounts
     /// or with different Meta, Extra, and Expand params while using the same secret key.
-    pub fn with(&self, params: Params) -> Client {
+    pub fn with_stripe_account_id<Str: Into<String>>(&self, account_id: Str) -> Client {
         let mut client = self.clone();
-        client.params = params;
+        client.stripe_account_id = Some(account_id.into());
         client
     }
 
     /// Sets a value for the Stripe-Account header
     ///
     /// This is recommended if you are acting as only one Account for the lifetime of the client.
-    /// Otherwise, prefer `client.with(Params{stripe_account: "acct_ABC", ..})`.
-    pub fn set_stripe_account<Str: Into<String>>(&mut self, account_id: Str) {
-        self.params.stripe_account = Some(account_id.into());
+    /// Otherwise, prefer `client.with(Params{stripe_account_id: "acct_ABC", ..})`.
+    pub fn set_stripe_account_id<Str: Into<String>>(&mut self, account_id: Str) {
+        self.stripe_account_id = Some(account_id.into());
+    }
+
+    fn request(&self, method: Method, path: &str) -> reqwest::RequestBuilder {
+        let url = self.url(path);
+        let mut request = self.inner.request(method, url);
+        request.headers(self.headers());
+        request
     }
 
     pub fn get<T: DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
-        let url = Client::url(path);
-        let mut request = self.reqwest_client.get(&url);
-        request.headers(self.headers());
+        let mut request = self.request(Method::Get, path);
         process_response(request.send()?)
     }
 
-    pub fn get_with_params<T: DeserializeOwned, P: serde::Serialize>(&self, path: &str, params: P) -> Result<T, Error> {
-        let url = Client::url(path);
-        let mut request = self.reqwest_client.get(&url);
-        request.headers(self.headers()).query(&params);
-        process_response(request.send()?)
-    }
-
-    pub fn post<T: DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
-        let url = Client::url(path);
-        let mut request = self.reqwest_client.post(&url);
-        request.headers(self.headers());
-        process_response(request.send()?)
-    }
-
-    pub fn post_with_params<T: DeserializeOwned, P: serde::Serialize>(
+    pub fn get_with_params<T: DeserializeOwned, Q: serde::Serialize>(
         &self,
         path: &str,
-        params: P,
+        query_params: Q,
     ) -> Result<T, Error> {
-        let url = Client::url(path);
-        let mut request = self.reqwest_client.post(&url);
-        request.headers(self.headers()).form(&params);
+        let mut request = self.request(Method::Get, path);
+        request.query(&query_params);
+        process_response(request.send()?)
+    }
+
+    pub fn post<T: DeserializeOwned>(
+        &self,
+        path: &str,
+    ) -> Result<T, Error> {
+        let mut request = self.request(Method::Post, path);
+        process_response(request.send()?)
+    }
+
+    pub fn post_with_params<T: DeserializeOwned, B: serde::Serialize>(
+        &self,
+        path: &str,
+        body_params: B,
+    ) -> Result<T, Error> {
+        let mut request = self.request(Method::Post, path);
+        request.form(&body_params);
         process_response(request.send()?)
     }
 
     pub fn delete<T: DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
-        let url = Client::url(path);
-        let mut request = self.reqwest_client.post(&url);
-        request.headers(self.headers());
+        let mut request = self.request(Method::Delete, path);
         process_response(request.send()?)
     }
 
-    pub fn delete_with_params<T: DeserializeOwned, P: serde::Serialize>(
+    pub fn delete_with_params<T: DeserializeOwned, Q: serde::Serialize>(
         &self,
         path: &str,
-        params: P,
+        query_params: Q,
     ) -> Result<T, Error> {
-        let url = Client::url(path);
-        let mut request = self.reqwest_client.post(&url);
-        request.headers(self.headers()).query(&params);
+        let mut request = self.request(Method::Delete, path);
+        request.query(&query_params);
         process_response(request.send()?)
     }
 
@@ -122,7 +112,7 @@ impl Client {
             password: None,
         }));
         headers.set(ContentType::form_url_encoded());
-        if let Some(ref account) = self.params.stripe_account {
+        if let Some(ref account) = self.stripe_account_id {
             headers.set_raw("Stripe-Account", vec![account.as_bytes().to_vec()]);
         }
         headers
@@ -138,20 +128,8 @@ fn process_response<T: DeserializeOwned>(mut response: reqwest::Response) -> Res
                     let request_err: RequestError = request_err;
                     Error::from(request_err)
                 }
-                Err(json_err) => {
-                    Error::from(json_err)
-                }
+                Err(json_err) => Error::from(json_err),
             })
-
-            // let mut err = json::from_str(&body).unwrap_or_else(|err| {
-            //     let mut req = ErrorObject {
-            //         error: RequestError::default(),
-            //     };
-            //     req.error.message = Some(format!("failed to deserialize error: {}", err));
-            //     req
-            // });
-            // err.error.http_status = status;
-            // Err(Error::from(err.error))
         }
     }
 }

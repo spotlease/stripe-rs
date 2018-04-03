@@ -186,7 +186,7 @@ impl Invoice {
 
     // TODO: Implement InvoiceListLinesParams
     // pub fn get_lines(client: &Client, invoice_id: &str, params: InvoiceListLinesParams) -> Result<List<InvoiceLineItem>, Error> {
-    //     client.get(&format!("/invoices/{}/lines", invoice_id))
+    //     client.get_with_params(&format!("/invoices/{}/lines", invoice_id))
     // }
 
     /// Retrieves the details of an upcoming invoice_id
@@ -207,7 +207,7 @@ impl Invoice {
     ///
     /// For more details see https://stripe.com/docs/api#update_invoice.
     pub fn update(client: &Client, invoice_id: &str, params: InvoiceParams) -> Result<Invoice, Error> {
-        client.post_with_params(&format!("/invoices/{}", invoice_id), &params)
+        client.post_with_params(&format!("/invoices/{}", invoice_id), params)
     }
 
     /// Lists all invoices.
@@ -223,6 +223,6 @@ impl InvoiceLineItem {
     ///
     /// For more details see https://stripe.com/docs/api#invoice_line_item_object
     pub fn create(client: &Client, params: InvoiceLineItemParams) -> Result<InvoiceLineItem, Error> {
-        client.post_with_params("/invoiceitems", &params)
+        client.post_with_params("/invoiceitems", Some(params))
     }
 }

@@ -59,12 +59,11 @@ extern crate serde_json;
 extern crate sha2;
 
 mod client;
-mod request;
 mod error;
 mod params;
 mod resources;
 
-pub use client::{Client, Params};
+pub use client::Client;
 pub use error::{Error, ErrorCode, ErrorType, RequestError};
 pub use params::{List, Metadata, RangeBounds, RangeQuery, Timestamp};
 pub use resources::*;
