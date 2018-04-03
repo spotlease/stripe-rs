@@ -1,8 +1,7 @@
-use error::Error;
 use client::Client;
-use resources::{Address, CardParams, Currency, Deleted, Discount, Source, Subscription, Card, BankAccount};
+use error::Error;
 use params::{List, Metadata, RangeQuery, Timestamp};
-use std::collections::HashMap;
+use resources::{Address, BankAccount, Card, CardParams, Currency, Deleted, Discount, Source, Subscription};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CustomerShippingDetails {
@@ -13,9 +12,9 @@ pub struct CustomerShippingDetails {
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
-pub enum NewCustomerSource<'a> {
+pub enum CustomerSourceParam<'a> {
     Token(&'a str),
-    Card(CardParams<'a>)
+    Card(CardParams<'a>),
 }
 
 #[derive(Debug, Deserialize)]
@@ -24,7 +23,7 @@ pub enum CustomerSource {
     #[serde(rename = "bank_account")]
     BankAccount(BankAccount),
     #[serde(rename = "card")]
-    Card(Card)
+    Card(Card),
 }
 
 /// The set of parameters that can be used when creating or updating a customer.
@@ -47,7 +46,7 @@ pub struct CustomerParams<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shipping: Option<CustomerShippingDetails>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub source: Option<NewCustomerSource<'a>>,
+    pub source: Option<CustomerSourceParam<'a>>,
 }
 
 /// The set of parameters that can be used when listing customers.
@@ -122,12 +121,20 @@ impl Customer {
     pub fn list(client: &Client, params: CustomerListParams) -> Result<List<Customer>, Error> {
         client.get_with_params("/customers", params)
     }
-}
 
-pub fn attach_source(client: &Client, customer_id: &str, source: NewCustomerSource) -> Result<CustomerSource, Error> {
+    pub fn attach_source(
+        client: &Client,
+        customer_id: &str,
+        source: CustomerSourceParam,
+    ) -> Result<CustomerSource, Error> {
+        #[derive(Debug, Serialize)]
+        struct Params<'a> {
+            source: CustomerSourceParam<'a>,
+        }
 
-    let mut params = HashMap::new();
-    params.insert("source", source);
-    
-    client.post_with_params(&format!("/customers/{}/sources", customer_id), params)
+        client.post_with_params(
+            &format!("/customers/{}/sources", customer_id),
+            Params { source: source },
+        )
+    }
 }
