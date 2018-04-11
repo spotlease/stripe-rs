@@ -13,6 +13,7 @@ pub struct CustomerShippingDetails {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum CustomerSourceParam<'a> {
+    Id(&'a str),
     Token(&'a str),
     Card(CardParams<'a>),
 }

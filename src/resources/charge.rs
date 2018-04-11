@@ -64,10 +64,8 @@ pub struct DestinationParams<'a> {
 /// For more details see https://stripe.com/docs/api#create_charge and https://stripe.com/docs/api#update_charge.
 #[derive(Default, Serialize)]
 pub struct ChargeParams<'a> {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub amount: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub currency: Option<Currency>,
+    pub amount: u64,
+    pub currency: Currency,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub application_fee: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
