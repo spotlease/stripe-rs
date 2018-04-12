@@ -114,11 +114,7 @@ impl Customer {
         client.get_with_params("/customers", params)
     }
 
-    pub fn attach_source(
-        client: &Client,
-        customer_id: &str,
-        source: CustomerSourceParam,
-    ) -> Result<Source, Error> {
+    pub fn attach_source(client: &Client, customer_id: &str, source: CustomerSourceParam) -> Result<Source, Error> {
         #[derive(Debug, Serialize)]
         struct Params<'a> {
             source: CustomerSourceParam<'a>,
@@ -128,5 +124,9 @@ impl Customer {
             &format!("/customers/{}/sources", customer_id),
             Params { source: source },
         )
+    }
+
+    pub fn detach_source(client: &Client, customer_id: &str, source_id: &str) -> Result<Source, Error> {
+        client.delete(&format!("/customers/{}/sources/{}", customer_id, source_id))
     }
 }
