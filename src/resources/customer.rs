@@ -126,7 +126,7 @@ impl Customer {
         )
     }
 
-    pub fn detach_source(client: &Client, customer_id: &str, source_id: &str) -> Result<Source, Error> {
+    pub fn detach_source(client: &Client, customer_id: &str, source_id: &str) -> Result<Deleted, Error> {
         client.delete(&format!("/customers/{}/sources/{}", customer_id, source_id))
     }
 }

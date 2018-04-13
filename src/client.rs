@@ -121,7 +121,7 @@ impl Client {
 
 fn process_response<T: DeserializeOwned>(mut response: reqwest::Response) -> Result<T, Error> {
     match response.status().as_u16() {
-        200 => response.json().map_err(|err| Error::from(err)),
+        200 => response.json().map_err(|err| Error::from(err)), //TODO: error should be recorded as conversion error
         _ => {
             Err(match response.json() {
                 Ok(request_err) => {
