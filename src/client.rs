@@ -120,13 +120,17 @@ impl Client {
 }
 
 fn process_response<T: DeserializeOwned>(mut response: reqwest::Response) -> Result<T, Error> {
+    #[derive(Debug, Deserialize)]
+    struct ErrorWrapper {
+        error: RequestError
+    }
     match response.status().as_u16() {
         200 => response.json().map_err(|err| Error::from(err)), //TODO: error should be recorded as conversion error
         _ => {
             Err(match response.json() {
-                Ok(request_err) => {
-                    let request_err: RequestError = request_err;
-                    Error::from(request_err)
+                Ok(request_err_object) => {
+                    let request_err_object: ErrorWrapper = request_err_object;
+                    Error::from(request_err_object.error)
                 }
                 Err(json_err) => Error::from(json_err),
             })
